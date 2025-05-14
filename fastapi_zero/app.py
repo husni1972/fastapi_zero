@@ -23,7 +23,7 @@ def read_aula02():
       </head>
       <body>
         <h1> Olá Mundo! </h1>
-        <h2> O IP do servidor é {IP.get_ip()} </h2>
+        <h2> O Socket Name IP é {IP.get_ip()} </h2>
       </body>
     </html>"""
     return text_html

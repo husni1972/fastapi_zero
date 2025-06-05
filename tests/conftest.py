@@ -10,7 +10,10 @@ from sqlalchemy.pool import StaticPool
 from fastapi_zero.app import app
 from fastapi_zero.database import get_session
 from fastapi_zero.models import User, table_registry
-from fastapi_zero.security import get_password_hash
+from fastapi_zero.security import (
+    Settings,
+    get_password_hash,
+)
 
 
 @pytest.fixture
@@ -98,7 +101,7 @@ def user_ficticio2(session):
 @pytest.fixture
 def token(client, user_ficticio):
     response = client.post(
-        '/token',
+        '/auth/token',
         data={
             'username': user_ficticio.email,
             'password': user_ficticio.clean_password,
@@ -106,3 +109,21 @@ def token(client, user_ficticio):
     )
 
     return response.json()['access_token']
+
+
+# @pytest.fixture
+# def current_user(client, user_ficticio):
+#     response = client.post(
+#         '/auth/token',
+#         data={
+#             'username': user_ficticio.email,
+#             'password': user_ficticio.clean_password,
+#         },
+#     )
+
+#     return get_current_user(session, response.json()['access_token'])
+
+
+@pytest.fixture
+def settings():
+    return Settings()

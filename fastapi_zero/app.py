@@ -1,5 +1,6 @@
-# live 258 e 211 / 207
+# live 258 e 211 / 207 / 234
 #
+from asyncio import sleep
 from http import HTTPStatus
 
 from fastapi import FastAPI
@@ -14,7 +15,8 @@ app.include_router(auth.router)
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Message)
-def read_root():
+async def read_root():
+    await sleep(1)
     return {'message': 'Olá Mundo!'}
 
 

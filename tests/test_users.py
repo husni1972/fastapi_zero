@@ -12,9 +12,9 @@ def test_get_current(client, token, user_ficticio):
 
     assert response.status_code == HTTPStatus.OK  # Assert
     assert response.json() == {
-         'username': user_ficticio.username,
-         'email': user_ficticio.email,
-         'id': user_ficticio.id,
+        'username': user_ficticio.username,
+        'email': user_ficticio.email,
+        'id': user_ficticio.id,
     }
 
 

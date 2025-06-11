@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from datetime import datetime
 
+import factory
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
@@ -69,11 +70,11 @@ def mock_db_time():
 
 
 @pytest_asyncio.fixture
-async def user_ficticio(session):
+async def user(session):
     password = 'testtest'
-    user = User(
-        username='Teste',
-        email='teste@teste.com',
+    user = UserFactory(
+        # irá sobrepor a password gerada pela UserFactory
+        # poderia-se deixar o get_password_hash dentro a UserFactory
         password=get_password_hash(password),
     )
     session.add(user)
@@ -86,11 +87,9 @@ async def user_ficticio(session):
 
 
 @pytest_asyncio.fixture
-async def user_ficticio2(session):
+async def other_user(session):
     password = 'testtest'
-    user = User(
-        username='Teste2',
-        email='teste2@teste.com',
+    user = UserFactory(
         password=get_password_hash(password),
     )
     session.add(user)
@@ -103,31 +102,27 @@ async def user_ficticio2(session):
 
 
 @pytest.fixture
-def token(client, user_ficticio):
+def token(client, user):
     response = client.post(
         '/auth/token',
         data={
-            'username': user_ficticio.email,
-            'password': user_ficticio.clean_password,
+            'username': user.email,
+            'password': user.clean_password,
         },
     )
 
     return response.json()['access_token']
 
 
-# @pytest.fixture
-# def current_user(client, user_ficticio):
-#     response = client.post(
-#         '/auth/token',
-#         data={
-#             'username': user_ficticio.email,
-#             'password': user_ficticio.clean_password,
-#         },
-#     )
-
-#     return get_current_user(session, response.json()['access_token'])
-
-
 @pytest.fixture
 def settings():
     return Settings()
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = User
+
+    username = factory.Sequence(lambda n: f'test{n}')
+    email = factory.LazyAttribute(lambda obj: f'{obj.username}@test.com')
+    password = factory.LazyAttribute(lambda obj: f'{obj.username}@Abcd12XyZ')

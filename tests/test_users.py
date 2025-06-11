@@ -4,7 +4,7 @@ from fastapi_zero.schemas import UserPublic
 from fastapi_zero.security import create_access_token
 
 
-def test_get_current(client, token, user_ficticio):
+def test_get_current(client, token, user):
     response = client.get(
         '/users/current',
         headers={'Authorization': f'Bearer {token}'},
@@ -12,9 +12,9 @@ def test_get_current(client, token, user_ficticio):
 
     assert response.status_code == HTTPStatus.OK  # Assert
     assert response.json() == {
-        'username': user_ficticio.username,
-        'email': user_ficticio.email,
-        'id': user_ficticio.id,
+        'username': user.username,
+        'email': user.email,
+        'id': user.id,
     }
 
 
@@ -37,11 +37,11 @@ def test_create_user(client):
     }
 
 
-def test_create_user_exist_user(client, user_ficticio):
+def test_create_user_exist_user(client, user):
     response = client.post(  # Act
         '/users/',
         json={
-            'username': user_ficticio.username,
+            'username': user.username,
             'email': 'teste2@teste.com',
             'password': 'testtest',
         },
@@ -50,12 +50,12 @@ def test_create_user_exist_user(client, user_ficticio):
     assert response.json() == {'detail': 'User already exists'}
 
 
-def test_create_user_exist_email(client, user_ficticio):
+def test_create_user_exist_email(client, user):
     response = client.post(  # Act
         '/users/',
         json={
             'username': 'Teste2',
-            'email': user_ficticio.email,
+            'email': user.email,
             'password': 'testtest',
         },
     )
@@ -94,32 +94,32 @@ def test_read_without_users(client):
     assert response.json() == {'users': []}
 
 
-def test_read_with_users(client, user_ficticio):
-    user_schema = UserPublic.model_validate(user_ficticio).model_dump()
+def test_read_with_users(client, user):
+    user_schema = UserPublic.model_validate(user).model_dump()
     response = client.get('/users/')  # Act
 
     assert response.status_code == HTTPStatus.OK  # Assert
     assert response.json() == {'users': [user_schema]}
 
 
-def test_read_user(client, user_ficticio):
-    user_schema = UserPublic.model_validate(user_ficticio).model_dump()
-    response = client.get(f'/users/{user_ficticio.id}')  # Act
+def test_read_user(client, user):
+    user_schema = UserPublic.model_validate(user).model_dump()
+    response = client.get(f'/users/{user.id}')  # Act
 
     assert response.status_code == HTTPStatus.OK  # Assert
     assert response.json() == user_schema
 
 
 def test_read_user_not_found(client):
-    response = client.get('/users/2')  # Act
+    response = client.get('/users/1')  # Act
 
     assert response.status_code == HTTPStatus.NOT_FOUND  # Assert
     assert response.json() == {'detail': 'User not found'}
 
 
-def test_update_user(client, user_ficticio, token):
+def test_update_user(client, user, token):
     response = client.put(
-        f'/users/{user_ficticio.id}',
+        f'/users/{user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'bob',
@@ -132,17 +132,57 @@ def test_update_user(client, user_ficticio, token):
     assert response.json() == {
         'username': 'bob',
         'email': 'bob@example.com',
-        'id': user_ficticio.id,
+        'id': user.id,
     }
 
 
-def test_delete_user(client, user_ficticio, token):
+def test_update_user_with_wrong_user(client, other_user, token):
+    response = client.put(
+        f'/users/{other_user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+        json={
+            'username': 'bob',
+            'email': 'bob@example.com',
+            'password': 'testtest',
+        },
+    )  # Act
+
+    assert response.status_code == HTTPStatus.FORBIDDEN  # Assert
+    assert response.json() == {'detail': 'Not enough permissions'}
+
+
+def test_update_integrity_error(client, user, other_user, token):
+    response = client.put(
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+        json={
+            'username': other_user.username,
+            'email': 'bob@example.com',
+            'password': 'testtest',
+        },
+    )  # Act
+
+    assert response.status_code == HTTPStatus.CONFLICT  # Assert
+    assert response.json() == {'detail': 'Username or Email already exists'}
+
+
+def test_delete_user(client, user, token):
     response = client.delete(
-        f'/users/{user_ficticio.id}',
+        f'/users/{user.id}',
         headers={'Authorization': f'Bearer {token}'},
     )  # Act
     assert response.status_code == HTTPStatus.OK  # Assert
     assert response.json() == {'message': 'User deleted'}
+
+
+def test_delete_user_with_wrong_user(client, other_user, token):
+    response = client.delete(
+        f'/users/{other_user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+    )  # Act
+
+    assert response.status_code == HTTPStatus.FORBIDDEN  # Assert
+    assert response.json() == {'detail': 'Not enough permissions'}
 
 
 # Deixa de ter o teste abaixo pois um usuário não pode atualizar algo diferente
@@ -160,25 +200,6 @@ def test_delete_user(client, user_ficticio, token):
 
 #     assert response.status_code == HTTPStatus.NOT_FOUND  # Assert
 #     assert response.json() == {'detail': 'User not found'}
-
-
-# PERDE O SENTIDO POIS NÃO ESTA SE BUSCANDO MAIS BUSCANDO A
-# INFORMAÇÃO DO BANCO DE DADOS
-# def test_update_user_integrityerror(
-#     client, user_ficticio, user_ficticio2, token
-# ):
-#     response = client.put(
-#         f'/users/{user_ficticio.id}',
-#         headers={'Authorization': f'Bearer {token}'},
-#         json={
-#             'username': 'Teste2',
-#             'email': 'bob@example.com',
-#             'password': 'testtest',
-#         },
-#     )  # Act
-
-#     assert response.status_code == HTTPStatus.CONFLICT  # Assert
-#     assert response.json() == {'detail': 'Username or Email already exists'}
 
 
 # Deixa de ter o teste abaixo pois um usuário não pode deletar algo diferente

@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi_zero.database import get_session
@@ -110,17 +111,15 @@ async def update_user(
         await session.refresh(current_user)
 
         return current_user
-    except Exception as e:
+    except IntegrityError:
         raise HTTPException(
-            detail=f'Testando {e}', status_code=HTTPStatus.FAILED_DEPENDENCY
+            detail='Username or Email already exists',
+            status_code=HTTPStatus.CONFLICT,
         )
 
-    # PERDE O SENTIDO POIS NÃO ESTA SE BUSCANDO MAIS BUSCANDO A
-    # INFORMAÇÃO DO BANCO DE DADOS
-    # except IntegrityError:
+    # except Exception as e:
     #     raise HTTPException(
-    #         detail='Username or Email already exists',
-    #         status_code=HTTPStatus.CONFLICT,
+    #         detail=f'Testando {e}', status_code=HTTPStatus.FAILED_DEPENDENCY
     #     )
 
 

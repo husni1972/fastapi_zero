@@ -58,11 +58,11 @@ def _mock_db_time(*, model, time=datetime(2025, 5, 20)):
         if hasattr(target, 'updated_at'):
             target.updated_at = time
 
-    event.listen(User, 'before_insert', fake_time_hook)
+    event.listen(model, 'before_insert', fake_time_hook)
 
     yield time
 
-    event.remove(User, 'before_insert', fake_time_hook)
+    event.remove(model, 'before_insert', fake_time_hook)
 
 
 @pytest.fixture

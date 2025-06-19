@@ -4,6 +4,7 @@ from http import HTTPStatus
 import factory
 import factory.fuzzy
 import pytest
+from sqlalchemy import select
 
 from fastapi_zero.models import Todo, TodoState
 
@@ -38,6 +39,22 @@ def test_create_todo(client, token, mock_db_time):
             'created_at': time.isoformat(),
             'updated_at': time.isoformat(),
         }
+
+
+@pytest.mark.asyncio
+async def test_create_todo_error(session, user):
+    todo = Todo(
+        title='Test Todo',
+        description='Test Desc',
+        state='test',
+        user_id=user.id,
+    )
+
+    session.add(todo)
+    await session.commit()
+
+    with pytest.raises(LookupError):
+        await session.scalar(select(Todo))
 
 
 @pytest.mark.asyncio
@@ -157,6 +174,36 @@ async def test_list_todos_filter_combined_should_return_5_todos(
     )
 
     assert len(response.json()['todos']) == expected_todos
+
+
+@pytest.mark.asyncio
+async def test_list_todos_should_return_all_fields(
+    session,
+    client,
+    user,
+    token,
+    mock_db_time,
+):
+    with mock_db_time(model=Todo) as time:
+        todo = TodoFactory.create(user_id=user.id)
+        session.add(todo)
+        await session.commit()
+
+        response = client.get(
+            '/todos/',
+            headers={'Authorization': f'Bearer {token}'},
+        )
+
+        assert response.json()['todos'] == [
+            {
+                'created_at': time.isoformat(),
+                'description': todo.description,
+                'id': todo.id,
+                'state': todo.state,
+                'title': todo.title,
+                'updated_at': time.isoformat(),
+            }
+        ]
 
 
 @pytest.mark.asyncio

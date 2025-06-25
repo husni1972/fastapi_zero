@@ -10,6 +10,9 @@ __pycache__/
 # C extensions
 *.so
 
+#EU 
+database.db
+
 # Distribution / packaging
 .python-version
 .Python
